@@ -1,0 +1,9 @@
+# SQLite DBファイル
+*.sqlite3
+
+# 出力・ログ・一時データ
+/data/logs/
+/data/exports/
+/*.log
+*.csv
+*.json
