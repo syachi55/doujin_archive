@@ -7,3 +7,6 @@
 /*.log
 *.csv
 *.json
+
+# 仮想環境除外
+.venv/
