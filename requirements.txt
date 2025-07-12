@@ -1,1 +1,2 @@
 pytest
+pytest-cov>=6.2.1
