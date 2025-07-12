@@ -55,7 +55,7 @@ def test_compose_folder_name(tmp_path, monkeypatch):
     patch_get_connection(monkeypatch, db_path)
 
     result = rename.compose_folder_name(1)
-    expected = normalize_for_filename('｛CG集｝[C1 (A1)、C2] Title （S1、S2）')
+    expected = normalize_for_filename('｛CG集｝[C1 (A1)、C2] Title （S1、S2） #id1')
     assert result == expected
 
 
@@ -73,10 +73,10 @@ def test_rename_one_work(tmp_path, monkeypatch):
     conn.close()
 
     patch_get_connection(monkeypatch, db_path)
-    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new")
+    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new #id1")
 
     assert rename.rename_one_work(1)
-    new_path = tmp_path / "new"
+    new_path = tmp_path / "new #id1"
     assert new_path.exists()
     assert not old_dir.exists()
 
@@ -106,7 +106,7 @@ def test_rename_all_confirmed_works(tmp_path, monkeypatch):
     conn.close()
 
     patch_get_connection(monkeypatch, db_path)
-    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new")
+    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new #id1")
     class DummyDatetime:
         @classmethod
         def now(cls):
@@ -116,7 +116,7 @@ def test_rename_all_confirmed_works(tmp_path, monkeypatch):
 
     rename.rename_all_confirmed_works()
 
-    new_path = tmp_path / "new"
+    new_path = tmp_path / "new #id1"
     assert new_path.exists()
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -161,7 +161,7 @@ def test_rename_one_work_missing_old_path(tmp_path, monkeypatch, capsys):
     conn.commit()
     conn.close()
     patch_get_connection(monkeypatch, db_path)
-    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new")
+    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new #id1")
     assert not rename.rename_one_work(1)
     captured = capsys.readouterr()
     assert "存在しません" in captured.out
@@ -171,7 +171,7 @@ def test_rename_one_work_new_path_exists(tmp_path, monkeypatch, capsys):
     db_path = tmp_path / "db.sqlite"
     conn = setup_db(db_path)
     old_dir = tmp_path / "old"
-    new_dir = tmp_path / "new"
+    new_dir = tmp_path / "new #id1"
     old_dir.mkdir()
     new_dir.mkdir()
     conn.execute(
@@ -182,7 +182,7 @@ def test_rename_one_work_new_path_exists(tmp_path, monkeypatch, capsys):
     conn.commit()
     conn.close()
     patch_get_connection(monkeypatch, db_path)
-    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new")
+    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new #id1")
     assert not rename.rename_one_work(1)
     captured = capsys.readouterr()
     assert "既に存在" in captured.out
@@ -206,7 +206,7 @@ def prepare_confirmed(db_path: Path, folder: Path) -> None:
 
 def run_confirmed(monkeypatch, db_path: Path, date: datetime, tmp_path: Path):
     patch_get_connection(monkeypatch, db_path)
-    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new")
+    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new #id1")
     class DummyDatetime:
         @classmethod
         def now(cls):
@@ -238,7 +238,7 @@ def test_rename_all_confirmed_missing_old(tmp_path, monkeypatch):
 def test_rename_all_confirmed_new_exists(tmp_path, monkeypatch):
     db = tmp_path / "db.sqlite"
     old_dir = tmp_path / "old"
-    new_dir = tmp_path / "new"
+    new_dir = tmp_path / "new #id1"
     old_dir.mkdir()
     new_dir.mkdir()
     prepare_confirmed(db, old_dir)
@@ -253,7 +253,7 @@ def test_rename_all_confirmed_exception(tmp_path, monkeypatch):
     folder.mkdir()
     prepare_confirmed(db, folder)
     patch_get_connection(monkeypatch, db)
-    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new")
+    monkeypatch.setattr(rename, "compose_folder_name", lambda _id: "new #id1")
     def fail(*args, **kwargs):
         raise RuntimeError("boom")
     monkeypatch.setattr(os, "rename", fail)

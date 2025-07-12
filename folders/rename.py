@@ -77,7 +77,11 @@ def compose_folder_name(work_id: int) -> str:
     source_section = f"（{'、'.join(sources)}）" if sources else ""
 
     # 3. 全体構成
-    raw_name = f"｛{type_name}｝[{circle_section}] {title} {source_section}".strip()
+    parts = [f"｛{type_name}｝[{circle_section}]", title]
+    if source_section:
+        parts.append(source_section)
+    parts.append(f"#id{work_id}")
+    raw_name = " ".join(parts)
     return normalize_for_filename(raw_name)
 
 
