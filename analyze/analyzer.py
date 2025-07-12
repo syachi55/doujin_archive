@@ -13,6 +13,11 @@ def strip_prefix(name: str) -> str:
     return re.sub(r"^〔.+?〕", "", name)
 
 
+def strip_suffix_id(name: str) -> str:
+    "suffix '#id123' を除去する"
+    return re.sub(r"\s*#id\d+$", "", name)
+
+
 # 最初にマッチしたパターンを適用
 def try_match(name: str) -> dict | None:
     "🍣"
@@ -39,6 +44,7 @@ def parse_original_names():
         for row in rows:
             work_id = row["id"]
             name = strip_prefix(row["original_name"])
+            name = strip_suffix_id(name)
 
             parsed = try_match(name)
             if not parsed:
