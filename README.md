@@ -82,3 +82,10 @@ venv\Scripts\activate
 
 - このREADMEは ChatGPT との設計共有・進行管理のために整備された。
 - codex による分担作業・履歴の可視化を前提とした構造整理が進行中。
+## 8. テスト実行方法
+
+```bash
+pip install -r requirements.txt
+pytest
+```
+
