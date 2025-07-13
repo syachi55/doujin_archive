@@ -51,3 +51,62 @@ def test_classify_and_export(tmp_path, monkeypatch):
         rows = list(csv.DictReader(f))
     csv_names = sorted(row["original_name"] for row in rows)
     assert csv_names == names
+
+
+def test_non_dir_category_folder(monkeypatch, tmp_path):
+    base = tmp_path / "base"
+    base.mkdir()
+    (base / "notdir.txt").write_text("x", encoding="utf-8")
+
+    monkeypatch.setattr(classifier, "BASE_DIRS", [str(base)])
+
+    classifier.classify_and_export()
+
+    assert not list(base.glob("*.json"))
+    assert not list(base.glob("*.csv"))
+
+
+def test_non_matching_folder_name(monkeypatch, tmp_path):
+    base = tmp_path / "base"
+    base.mkdir()
+    invalid = base / "random"
+    invalid.mkdir()
+    sub = invalid / "A"
+    sub.mkdir()
+    (sub / "img.jpg").write_bytes(b"x")
+
+    monkeypatch.setattr(classifier, "BASE_DIRS", [str(base)])
+
+    classifier.classify_and_export()
+
+    assert not list(base.glob("*.json"))
+    assert not list(base.glob("*.csv"))
+
+
+def test_non_dir_subfolder(monkeypatch, tmp_path):
+    base = tmp_path / "base"
+    base.mkdir()
+    cat = base / "【画像10枚以上】"
+    cat.mkdir()
+    (cat / "file.txt").write_text("x", encoding="utf-8")
+
+    monkeypatch.setattr(classifier, "BASE_DIRS", [str(base)])
+
+    classifier.classify_and_export()
+
+    assert not list(base.glob("*.json"))
+    assert not list(base.glob("*.csv"))
+
+
+def test_no_classifiable_records(monkeypatch, tmp_path, capfd):
+    base = tmp_path / "base"
+    base.mkdir()
+
+    monkeypatch.setattr(classifier, "BASE_DIRS", [str(base)])
+
+    classifier.classify_and_export()
+    out, _ = capfd.readouterr()
+
+    assert f"⚠️ {base.name} → 分類対象なし" in out
+    assert not list(base.glob("*.json"))
+    assert not list(base.glob("*.csv"))
