@@ -165,3 +165,132 @@ def test_delete_orphan_relations(tmp_path, monkeypatch):
     cur.execute("SELECT COUNT(*) AS cnt FROM work_circle_authors WHERE work_id = 1")
     assert cur.fetchone()["cnt"] == 1
     conn.close()
+
+
+def test_delete_physical_folders_base_missing(tmp_path, monkeypatch, capsys):
+    missing = tmp_path / "missing"
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(missing)])
+    monkeypatch.setattr(cleaner, "get_all_db_folder_paths", lambda: set())
+
+    cleaner.delete_physical_folders_not_in_db(dry_run=True)
+
+    out = capsys.readouterr().out
+    assert "削除候補 0 件" in out
+
+
+def test_delete_physical_folders_skips_file(tmp_path, monkeypatch):
+    base = tmp_path / "base"
+    base.mkdir()
+    file_item = base / "note.txt"
+    file_item.write_text("x", encoding="utf-8")
+    to_remove = base / "remove"
+    to_remove.mkdir()
+
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(base)])
+    monkeypatch.setattr(cleaner, "get_all_db_folder_paths", lambda: set())
+
+    cleaner.delete_physical_folders_not_in_db(dry_run=False)
+
+    assert file_item.exists()
+    assert not to_remove.exists()
+
+
+def test_delete_physical_folders_dry_run(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "base"
+    base.mkdir()
+    target = base / "target"
+    target.mkdir()
+
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(base)])
+    monkeypatch.setattr(cleaner, "get_all_db_folder_paths", lambda: set())
+
+    cleaner.delete_physical_folders_not_in_db(dry_run=True)
+
+    out = capsys.readouterr().out
+    assert "[unregistered]" in out
+    assert "削除候補 1 件" in out
+    assert target.exists()
+
+
+def test_delete_physical_folders_rmtree_error(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "base"
+    base.mkdir()
+    bad = base / "bad"
+    bad.mkdir()
+
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(base)])
+    monkeypatch.setattr(cleaner, "get_all_db_folder_paths", lambda: set())
+
+    def fail(_path):
+        raise OSError("boom")
+
+    monkeypatch.setattr(cleaner.shutil, "rmtree", fail)
+
+    cleaner.delete_physical_folders_not_in_db(dry_run=False)
+
+    out = capsys.readouterr().out
+    assert "[error]" in out
+    assert bad.exists()
+
+
+def test_delete_folders_with_zero_images_base_missing(tmp_path, monkeypatch, capsys):
+    missing = tmp_path / "missing"
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(missing)])
+    cleaner.delete_folders_with_zero_images(dry_run=True)
+    out = capsys.readouterr().out
+    assert "画像0枚フォルダ候補 0 件" in out
+
+
+def test_delete_folders_with_zero_images_skip_file(tmp_path, monkeypatch):
+    base = tmp_path / "base"
+    base.mkdir()
+    file_item = base / "note.txt"
+    file_item.write_text("x", encoding="utf-8")
+    empty = base / "empty"
+    empty.mkdir()
+
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(base)])
+    monkeypatch.setattr(cleaner, "count_images", lambda _p: 0)
+
+    cleaner.delete_folders_with_zero_images(dry_run=False)
+
+    assert file_item.exists()
+    assert not empty.exists()
+
+
+def test_delete_folders_with_zero_images_dry_run(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "base"
+    base.mkdir()
+    empty = base / "empty"
+    empty.mkdir()
+
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(base)])
+    monkeypatch.setattr(cleaner, "count_images", lambda _p: 0)
+
+    cleaner.delete_folders_with_zero_images(dry_run=True)
+
+    out = capsys.readouterr().out
+    assert "[zero]" in out
+    assert "画像0枚フォルダ候補 1 件" in out
+    assert empty.exists()
+
+
+def test_delete_folders_with_zero_images_rmtree_error(tmp_path, monkeypatch, capsys):
+    base = tmp_path / "base"
+    base.mkdir()
+    bad = base / "bad"
+    bad.mkdir()
+
+    monkeypatch.setattr(cleaner, "BASE_DIRS", [str(base)])
+    monkeypatch.setattr(cleaner, "count_images", lambda _p: 0)
+
+    def fail(_p):
+        raise OSError("err")
+
+    monkeypatch.setattr(cleaner.shutil, "rmtree", fail)
+
+    cleaner.delete_folders_with_zero_images(dry_run=False)
+
+    out = capsys.readouterr().out
+    assert "[error]" in out
+    assert bad.exists()
