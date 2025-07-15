@@ -114,3 +114,23 @@ def test_load_classified_works(tmp_path, monkeypatch):
     assert rows[1]["folder_path"] == "p2"
     assert rows[1]["original_name"] == "N2"
     assert rows[1]["image_count"] == 7
+
+
+def test_load_classified_works_no_json(tmp_path, monkeypatch, capsys):
+    db_path = tmp_path / "nojson.sqlite"
+    setup_db(db_path).close()
+    patch_get_connection(monkeypatch, db_path)
+
+    empty_dir = tmp_path / "empty"
+    empty_dir.mkdir()
+    monkeypatch.setattr(loader, "BASE_DIRS", [str(empty_dir)])
+
+    loader.load_classified_works()
+
+    captured = capsys.readouterr()
+    assert f"⚠️ 分類結果が見つかりません: {empty_dir}" in captured.out
+
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT * FROM works").fetchall()
+    conn.close()
+    assert rows == []
