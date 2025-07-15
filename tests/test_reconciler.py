@@ -75,6 +75,24 @@ def test_get_all_physical_folders(tmp_path, monkeypatch):
     assert set(result) == {f1.resolve(), f2.resolve()}
 
 
+def test_get_all_physical_folders_missing_base(tmp_path, monkeypatch, capsys):
+    missing = tmp_path / "missing"
+    base = tmp_path / "base"
+    base.mkdir()
+    d1 = base / "A"
+    d1.mkdir()
+    d2 = base / "B"
+    d2.mkdir()
+    (base / "note.txt").write_text("x", encoding="utf-8")
+
+    monkeypatch.setattr(reconciler, "BASE_DIRS", [str(missing), str(base)])
+
+    result = reconciler.get_all_physical_folders()
+    out = capsys.readouterr().out
+    assert f"[warn] base directory not found: {missing}" in out
+    assert set(result) == {d1.resolve(), d2.resolve()}
+
+
 def test_compare_db_and_folders(capsys, tmp_path, monkeypatch):
     p1 = (tmp_path / "p1").resolve()
     p2 = (tmp_path / "p2").resolve()
